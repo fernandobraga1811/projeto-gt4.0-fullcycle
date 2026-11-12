@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pedidos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pedidos-dev}
+      POSTGRES_DB: ${POSTGRES_DB:-pedidos}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pedidos} -d ${POSTGRES_DB:-pedidos}"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgres://${POSTGRES_USER:-pedidos}:${POSTGRES_PASSWORD:-pedidos-dev}@db:5432/${POSTGRES_DB:-pedidos}
+    ports:
+      - "${PORT:-3000}:3000"
+
+volumes:
+  pgdata:
